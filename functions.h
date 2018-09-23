@@ -31,9 +31,20 @@ void tokenize(char source[]){
     }
 }
 
-bool changeDir(void){
+int changeDir(void){
 
+
+    char *home;
     int success = -1;
+    
+    if(strcmp(args[1], "\0") == 0){
+
+        home = getenv("HOME");
+
+        success = chdir(home);
+
+        return success;
+    }
 
     //try to change the cwd to the path specified
     success = chdir(args[1]);

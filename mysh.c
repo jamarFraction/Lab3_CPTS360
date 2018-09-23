@@ -27,19 +27,21 @@ int main(void){
             exit(1);
         }else if(strcmp(args[0], "cd") == 0){
 
-            if (args[1] != 0 && changeDir() == 0){
-
-                //success message
-                printf("cd to %s successful\n", args[1]);
+            //check for successful cd 
+            if (changeDir() == 0){
+                
+                printf("cd to %s successful\n", (strcmp(args[1], "\0") == 0) ? "$HOME": args[1]);                
             }else{
-
+                //bruh, it be like that sometimes..
                 printf("cd to %s failed\n", args[1]);
             }
+
+            //testing
+            char cwd[256];
+            getcwd(cwd, sizeof(cwd));
+            printf("cwd is: %s\n", cwd);
         }
-
-
-
-
     }
+    
     return 0;
 }
