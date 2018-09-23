@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include <unistd.h>
 
 //array to hold the strings of arguments
 //as an aside, i've been declaring these WRONG for years till now and never knew
@@ -28,3 +30,21 @@ void tokenize(char source[]){
         i++;
     }
 }
+
+bool changeDir(void){
+
+    int success = -1;
+
+    //try to change the cwd to the path specified
+    success = chdir(args[1]);
+
+    return success;
+}
+
+//testing
+//  char cwd[256];
+// if (getcwd(cwd, sizeof(cwd)) != NULL)
+// {
+//     printf("Current working dir: %s\n", cwd);
+// }
+//  getcwd(cwd, sizeof(cwd));

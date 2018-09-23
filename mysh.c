@@ -21,8 +21,25 @@ int main(void){
         //resuls stored in global args array
         tokenize(lineCpy);
 
-        printf("stop\n");
-    }
+        //per assignment instructions, special case commands
+        if (strcmp(args[0], "exit") == 0){
+            //outta here
+            exit(1);
+        }else if(strcmp(args[0], "cd") == 0){
 
+            if (args[1] != 0 && changeDir() == 0){
+
+                //success message
+                printf("cd to %s successful\n", args[1]);
+            }else{
+
+                printf("cd to %s failed\n", args[1]);
+            }
+        }
+
+
+
+
+    }
     return 0;
 }
