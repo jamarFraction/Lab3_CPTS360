@@ -10,10 +10,16 @@
 
 //array to hold the strings of arguments
 //as an aside, i've been declaring these WRONG for years till now and never knew
-char args[16][16];
-char line[128]; //user input command line
-//char head[16], tail[16];
+char userInput[16][16];
+
+//argv to be passed to execve
+char *myargv[16];
+
+//raw user line
+char line[128];
+
 int myargc = 0; 
+
 
 void tokenize(char source[]){
 
@@ -27,7 +33,7 @@ void tokenize(char source[]){
     while (next != 0)
     {
 
-        strcpy(args[i], next);
+        strcpy(userInput[i], next);
 
         next = strtok(NULL, " ");
 
@@ -42,7 +48,7 @@ int changeDir(void){
     char *home;
     int success = -1;
     
-    if(strcmp(args[1], "\0") == 0){
+    if(strcmp(userInput[1], "\0") == 0){
 
         home = getenv("HOME");
 
@@ -52,7 +58,7 @@ int changeDir(void){
     }
 
     //try to change the cwd to the path specified
-    success = chdir(args[1]);
+    success = chdir(userInput[1]);
 
 
     return success;
@@ -61,16 +67,13 @@ int changeDir(void){
 void createMyargv(char *destination[]){
 
     //create a useable args array with the absolute path of the binaries
-    int i = 1;
-    char path[32] = "/bin/";
-    strcat(path, args[0]);
-    destination[0] = path;
-    
-    //copy over the remainder of the args
-    while (args[i][0] != 0)
+    int i = 0;
+
+    //copy over the values from the 2D user input to the 1D destination array
+    while (userInput[i][0] != 0)
     {
 
-        destination[i] = args[i];
+        destination[i] = userInput[i];
         i++;
     }
 
@@ -83,12 +86,16 @@ void cleanup(){
     //clear the args from the past run
     for(int i = 0; i < 16; i++){
 
-        memset(args[i],0,strlen(args[i]));
-
+        memset(userInput[i],0,strlen(userInput[i]));
+        //clear the myargv
+        
     }
+
 
     //args count for the command must be reset
     myargc = 0;
+
+
 }
 
 int createApp(char *file)

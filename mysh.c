@@ -23,21 +23,21 @@ int main(int argc, char *argv[], char *envp[]){
 
         
         //per assignment instructions, special case commands
-        if (strcmp(args[0], "exit") == 0){
+        if (strcmp(userInput[0], "exit") == 0){
             //outta here
             exit(1);
-        }else if(strcmp(args[0], "cd") == 0){
+        }else if(strcmp(userInput[0], "cd") == 0){
 
             //check for successful cd 
             if (changeDir() == 0){
                 
-                printf("cd to %s successful\n", (strcmp(args[1], "\0") == 0) ? "$HOME": args[1]);                
+                printf("cd to %s successful\n", (strcmp(userInput[1], "\0") == 0) ? "$HOME": userInput[1]);                
             }else{
                 //bruh, it be like that sometimes..
-                printf("cd to %s failed\n", args[1]);
+                printf("cd to %s failed\n", userInput[1]);
             }
 
-            //testing
+            //Print cwd info
             char cwd[256];
             getcwd(cwd, sizeof(cwd));
             printf("cwd is: %s\n", cwd);
@@ -56,11 +56,13 @@ int main(int argc, char *argv[], char *envp[]){
             else if(pid == 0)
             {
                 
-                //testing
-                char *myargv[16];
+                //declare the variables that will hold the argv array and command path
+                char commandPath[16] = "/bin/";
 
-                //create the myargv array from the existing args
+                //create the myargv array from the existing args,
+                //concatenate the user's cmd to the path
                 createMyargv(myargv);
+                strcat(commandPath, myargv[0]);
 
                 //redirection check
                 if (isRedirect(myargv) != -1)
@@ -70,12 +72,10 @@ int main(int argc, char *argv[], char *envp[]){
                     myargv[myargc - 2] = NULL;
                 }
 
-
                 //execute the command
-                //FIX SECOND ARGUMENT
-                int success = execve(myargv[0], myargv, envp);
+                int success = execve(commandPath, myargv, envp);
             
-                //print out the error
+                //print out the error in errno, if needed
                 if (success == -1){
 
                      printf("%s\n", strerror(errno));
@@ -83,7 +83,8 @@ int main(int argc, char *argv[], char *envp[]){
 
                 exit(0);
             }else{
-
+                
+                //failed process creation
                 printf("Unable to create process\n");
             }
         }
