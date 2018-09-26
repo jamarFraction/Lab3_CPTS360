@@ -9,11 +9,10 @@
 #include <fcntl.h>
 
 //array to hold the strings of arguments
-//as an aside, i've been declaring these WRONG for years till now and never knew
 char userInput[16][16];
 
 //argv to be passed to execve
-char *myargv[16];
+char *ARGV[16];
 
 //raw user line
 char line[128];
@@ -90,7 +89,7 @@ void cleanup()
     {
 
         memset(userInput[i], 0, strlen(userInput[i]));
-        //clear the myargv
+        
     }
 
     //args count for the command must be reset
@@ -176,67 +175,159 @@ int isRedirect(char *argv[])
     return -1;
 }
 
+
+int isPipe(char *head[], char *tail[])
+{
+
+    int i = 0;
+    while (ARGV[i])
+    {
+        if (strcmp(ARGV[i], "|") == 0)
+        { // it has pipe
+            //assign head and tail
+            int j = 0;
+            while (ARGV[j])
+            {
+                if (j < i)
+                { // head
+                    head[j] = ARGV[j];
+                }
+                else if (j > i)
+                { // tail
+                    tail[j - 3] = ARGV[j];
+                }
+                j++;
+            }
+            return 1;
+        }
+        i++;
+    }
+    return 0;
+}
+
+int execute(char *myargv[]){
+
+    //declare the variables that will hold the argv array and command path
+    char commandPath[16] = "/bin/";
+    
+    //concatenate the user's cmd to the path
+    strcat(commandPath, myargv[0]);
+
+    if (isRedirect(myargv) != -1) //redirection check
+    {
+        //redirect points have already been set
+        //execve will fail if it continues in the array after this point
+        myargv[myargc - 2] = NULL;
+    }
+
+    //execute the command
+    int success = execve(commandPath, myargv, NULL);
+
+    if (success == -1)
+    {
+        //print out the error in errno, if needed
+        printf("%s\n", strerror(errno));
+    }
+}
+
+void connectPipe(char *head[], char *tail[]){
+
+    int pd[2], pid;
+
+    pipe(pd); // creates a PIPE; pd[0] for READ  from the pipe,
+              //                 pd[1] for WRITE to   the pipe.
+
+    pid = fork(); // fork a child process
+                  // child also has the same pd[0] and pd[1]
+
+    if (pid)
+    {                 // parent as pipe pipe WRITER
+        close(pd[0]); // WRITER MUST close pd[0]
+
+        close(1);     // close 1
+        dup(pd[1]);   // replace 1 with pd[1]
+        close(pd[1]); // close pd[1] since it has replaced 1
+        execute(head);   // change image to cmd1
+    }
+    else
+    {                 // child as pipe pipe READER
+        close(pd[1]); // READER MUST close pd[1]
+
+        close(0);
+        dup(pd[0]);   // replace 0 with pd[0]
+        close(pd[0]); // close pd[0] since it has replaced 0
+        execute(tail);   // change image to cmd2
+    }
+}
+
 int forkChild()
 {
 
-    //child:
     int pid, status;
-
-    
 
     pid = fork();
 
-    if (pid > 0)
-    { // PARENT:
+    if (pid > 0) //parent
+    {            
         printf("PARENT %d WAITS FOR CHILD %d TO DIE\n", getpid(), pid);
         pid = wait(&status);
         printf("DEAD CHILD=%d, HOW=%04x\n", pid, status);
     }
-    else if (pid == 0)
+    else if (pid == 0) //child:
     {
+        
+        char *head[16], *tail[16];
 
-        //declare the variables that will hold the argv array and command path
-        char commandPath[16] = "/bin/";
-
-        //create the myargv array from the existing args,
-        //concatenate the user's cmd to the path
-        createMyargv(myargv);
-        strcat(commandPath, myargv[0]);
-
-        char head[16], tail[16];
-
-        // if (isPipe(head, tail))
-        // {
-        //     printf("Deez\n");
-        // }
-        //else
-        if (isRedirect(myargv) != -1) //redirection check
+        if (isPipe(head, tail) == 1)
         {
-            //redirect points have already been set
-            //execve will fail if it continues in the array after this point
-            myargv[myargc - 2] = NULL;
-        }
-        //execute the command
-        int success = execve(commandPath, myargv, NULL);
+            connectPipe(head, tail);
+        }else{
 
-        if (success == -1)
-        {
-            //print out the error in errno, if needed
-            printf("%s\n", strerror(errno));
+            execute(ARGV);
         }
 
         exit(0);
 
-        
-    }else{//failed process creation
-
+    }
+    else //failed process creation
+    { 
         printf("Unable to create process\n");
     }
 }
 
-int isPipe(char head[], char tail[])
-{
+void executeCommand(void){
 
-    //hoop through the
-    return 0;
+    //create the myargv array from the existing args,
+    createMyargv(ARGV);
+
+    //per assignment instructions, special case commands
+    if (strcmp(userInput[0], "exit") == 0)
+    {
+        //outta here
+        exit(1);
+    }
+    else if (strcmp(userInput[0], "cd") == 0)
+    {
+
+        //check for successful cd
+        if (changeDir() == 0)
+        {
+
+            printf("cd to %s successful\n", (strcmp(userInput[1], "\0") == 0) ? "$HOME" : userInput[1]);
+        }
+        else
+        {
+            //bruh, it be like that sometimes..
+            printf("cd to %s failed\n", userInput[1]);
+        }
+
+        //Print cwd info
+        char cwd[256];
+        getcwd(cwd, sizeof(cwd));
+        printf("cwd is: %s\n", cwd);
+    }
+    else
+    {
+        forkChild();
+    }
 }
