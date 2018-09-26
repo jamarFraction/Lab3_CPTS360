@@ -43,50 +43,8 @@ int main(int argc, char *argv[], char *envp[]){
             printf("cwd is: %s\n", cwd);
         }else{
 
-            //child:
-            int pid, status;
-            pid = fork();
-
-            if (pid > 0)
-            { // PARENT:
-                printf("PARENT %d WAITS FOR CHILD %d TO DIE\n", getpid(), pid);
-                pid = wait(&status);
-                printf("DEAD CHILD=%d, HOW=%04x\n", pid, status);
-            }
-            else if(pid == 0)
-            {
-                
-                //declare the variables that will hold the argv array and command path
-                char commandPath[16] = "/bin/";
-
-                //create the myargv array from the existing args,
-                //concatenate the user's cmd to the path
-                createMyargv(myargv);
-                strcat(commandPath, myargv[0]);
-
-                //redirection check
-                if (isRedirect(myargv) != -1)
-                {
-                    //redirect points have already been set
-                    //execve will fail if it continues in the array after this point
-                    myargv[myargc - 2] = NULL;
-                }
-
-                //execute the command
-                int success = execve(commandPath, myargv, envp);
+            forkChild();
             
-                //print out the error in errno, if needed
-                if (success == -1){
-
-                     printf("%s\n", strerror(errno));
-                }
-
-                exit(0);
-            }else{
-                
-                //failed process creation
-                printf("Unable to create process\n");
-            }
         }
 
         cleanup();

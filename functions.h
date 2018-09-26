@@ -18,10 +18,10 @@ char *myargv[16];
 //raw user line
 char line[128];
 
-int myargc = 0; 
+int myargc = 0;
 
-
-void tokenize(char source[]){
+void tokenize(char source[])
+{
 
     //temp string holder of strtok vals
     char *next = strtok(source, " ");
@@ -42,13 +42,14 @@ void tokenize(char source[]){
     }
 }
 
-int changeDir(void){
-
+int changeDir(void)
+{
 
     char *home;
     int success = -1;
-    
-    if(strcmp(userInput[1], "\0") == 0){
+
+    if (strcmp(userInput[1], "\0") == 0)
+    {
 
         home = getenv("HOME");
 
@@ -60,11 +61,11 @@ int changeDir(void){
     //try to change the cwd to the path specified
     success = chdir(userInput[1]);
 
-
     return success;
 }
 
-void createMyargv(char *destination[]){
+void createMyargv(char *destination[])
+{
 
     //create a useable args array with the absolute path of the binaries
     int i = 0;
@@ -81,61 +82,59 @@ void createMyargv(char *destination[]){
     destination[i] = NULL;
 }
 
-void cleanup(){
+void cleanup()
+{
 
     //clear the args from the past run
-    for(int i = 0; i < 16; i++){
+    for (int i = 0; i < 16; i++)
+    {
 
-        memset(userInput[i],0,strlen(userInput[i]));
+        memset(userInput[i], 0, strlen(userInput[i]));
         //clear the myargv
-        
     }
-
 
     //args count for the command must be reset
     myargc = 0;
-
-
 }
 
 int createApp(char *file)
 {
-  // close fd 1
-  close(1);
-  return open(file, O_WRONLY|O_APPEND, 0644);
+    // close fd 1
+    close(1);
+    return open(file, O_WRONLY | O_APPEND, 0644);
 }
 
 int createOut(char *file)
 {
-  // close fd 1
-  close(1);
+    // close fd 1
+    close(1);
 
-  return open(file, O_WRONLY|O_CREAT, 0644);
+    return open(file, O_WRONLY | O_CREAT, 0644);
 }
 
 int createIn(char *file)
 {
-  // close fd 0
-  close(0);
+    // close fd 0
+    close(0);
 
-  return open(file, O_RDONLY);
+    return open(file, O_RDONLY);
 }
 
 int redirect(int direction, char filename[])
 {
-  if (direction == 1)
-  {
-    return createIn(filename);
-  }
-  else if(direction == 2)
-  {
-    return createOut(filename);
-  }
-  else if(direction == 3)
-  {
-    return createApp(filename);
-  }
-  return 1;
+    if (direction == 1)
+    {
+        return createIn(filename);
+    }
+    else if (direction == 2)
+    {
+        return createOut(filename);
+    }
+    else if (direction == 3)
+    {
+        return createApp(filename);
+    }
+    return 1;
 }
 
 int isRedirect(char *argv[])
@@ -176,10 +175,68 @@ int isRedirect(char *argv[])
     }
     return -1;
 }
-//testing
-//  char cwd[256];
-// if (getcwd(cwd, sizeof(cwd)) != NULL)
-// {
-//     printf("Current working dir: %s\n", cwd);
-// }
-//  getcwd(cwd, sizeof(cwd));
+
+int forkChild()
+{
+
+    //child:
+    int pid, status;
+
+    
+
+    pid = fork();
+
+    if (pid > 0)
+    { // PARENT:
+        printf("PARENT %d WAITS FOR CHILD %d TO DIE\n", getpid(), pid);
+        pid = wait(&status);
+        printf("DEAD CHILD=%d, HOW=%04x\n", pid, status);
+    }
+    else if (pid == 0)
+    {
+
+        //declare the variables that will hold the argv array and command path
+        char commandPath[16] = "/bin/";
+
+        //create the myargv array from the existing args,
+        //concatenate the user's cmd to the path
+        createMyargv(myargv);
+        strcat(commandPath, myargv[0]);
+
+        char head[16], tail[16];
+
+        // if (isPipe(head, tail))
+        // {
+        //     printf("Deez\n");
+        // }
+        //else
+        if (isRedirect(myargv) != -1) //redirection check
+        {
+            //redirect points have already been set
+            //execve will fail if it continues in the array after this point
+            myargv[myargc - 2] = NULL;
+        }
+        //execute the command
+        int success = execve(commandPath, myargv, NULL);
+
+        if (success == -1)
+        {
+            //print out the error in errno, if needed
+            printf("%s\n", strerror(errno));
+        }
+
+        exit(0);
+
+        
+    }else{//failed process creation
+
+        printf("Unable to create process\n");
+    }
+}
+
+int isPipe(char head[], char tail[])
+{
+
+    //hoop through the
+    return 0;
+}
